@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """
- (C) Copyright 2013, Jaromir Sedlacek (jaromir.sedlacek@gmail.com).
+ (C) Copyright 2013, Jaromir Sedlacek <jaromir.sedlacek@gmail.com>.
 
  All rights reserved.
 
