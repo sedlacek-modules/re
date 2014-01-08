@@ -102,14 +102,17 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Prefix command output')
     parser.add_argument('--stdout', default=None, dest='stdout', metavar='<stdout>', help='format of stdout')
     parser.add_argument('--stderr', default=None, dest='stderr', metavar='<stderr>', help='format of stderr')
+    parser.add_argument('--stdin', default=None, dest='stdin', metavar='<stdin>', help='format of stdin')
     parser.add_argument('--timestamp', default='%Y-%m-%d %H:%M:%S%Z', dest='timestamp', metavar='<timestamp>',
                         help='timestamp format, available as {timestamp}')
     parser.add_argument('cmd', nargs='*', metavar='<cmd>', help='command to run')
 
     args = vars(parser.parse_args())
 
-    print args
-
-    _stdin = InOut(fmt='{clock} {epoch} {timestamp} {input}\n')
-    _stdin()
+    if len(args['cmd']) == 0:
+        # we just filter stdin
+        if args['stdin'] is None:
+            args['stdin'] = '{timestamp} {input}\n'
+        _stdin = InOut(fmt=args['stdin'])
+        _stdin()
 
