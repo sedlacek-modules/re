@@ -26,7 +26,9 @@ import argparse
 from calendar import timegm
 from datetime import datetime
 from time import clock, localtime, strftime
-from sys import stdout, stdin
+from sys import stdout, stderr, stdin
+from subprocess import Popen, PIPE
+from threading import Thread
 
 
 def utc_epoch():
@@ -66,16 +68,7 @@ class InOut(object):
     """
 
     # noinspection PyDefaultArgument
-    def __init__(self, name=None, fmt=None, values={}):
-        self.fmt = fmt
-        self.values = values
-        self.name = name
-
-    def process(self, _in=None, _out=None):
-        name = self.name
-        fmt = self.fmt
-        values = self.values
-
+    def __init__(self, name=None, fmt=None, _in=None, _out=None, values={}):
         if _in is None:
             _in = stdin
         if _out is None:
@@ -84,15 +77,22 @@ class InOut(object):
             name = 'input'
         if fmt is None:
             fmt = '{' + name + '}\n'
+        self.fmt = fmt
+        self.values = values
+        self.name = name
+        self._in = _in
+        self._out = _out
 
+
+    def process(self):
         while True:
-            line = _in.readline()
+            line = self._in.readline()
             if not line:
                 break
             epoch = utc_epoch()
-            values.update(
-                {name: line.rstrip(), 'clock': cpu_clock(), 'epoch': epoch, 'timestamp': timestamp(time=epoch)})
-            _out.write(fmt.format(**values))
+            self.values.update(
+                {self.name: line.rstrip(), 'clock': cpu_clock(), 'epoch': epoch, 'timestamp': timestamp(time=epoch)})
+            self._out.write(self.fmt.format(**self.values))
 
     def __call__(self, *args, **kwargs):
         self.process(*args, **kwargs)
@@ -115,4 +115,26 @@ if __name__ == '__main__':
             args['stdin'] = '{timestamp} {input}\n'
         _stdin = InOut(fmt=args['stdin'])
         _stdin()
+    else:
+        if args['stdout'] is None:
+            args['stdout'] = 'O {timestamp} {stdout}\n'
+        if args['stderr'] is None:
+            args['stderr'] = 'E {timestamp} {stderr}\n'
+
+        # open process
+        process = Popen(args['cmd'], bufsize=1, stdout=PIPE, stderr=PIPE)
+
+        # define threads
+        t_stdout = Thread(target=InOut(name='stdout', _in=process.stdout, _out=stdout, fmt=args['stdout']))
+        t_stderr = Thread(target=InOut(name='stderr', _in=process.stderr, _out=stderr, fmt=args['stderr']))
+
+        # start threads
+        t_stdout.start()
+        t_stderr.start()
+
+        # wait for all to finish
+        t_stdout.join()
+        t_stderr.join()
+        process.wait()
+
 
