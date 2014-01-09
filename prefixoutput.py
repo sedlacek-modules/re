@@ -94,8 +94,8 @@ class InOut(object):
                 {self.name: line.rstrip(), 'clock': cpu_clock(), 'epoch': epoch, 'timestamp': timestamp(time=epoch)})
             self._out.write(self.fmt.format(**self.values))
 
-    def __call__(self, *args, **kwargs):
-        self.process(*args, **kwargs)
+    def __call__(self):
+        self.process()
 
 
 if __name__ == '__main__':
